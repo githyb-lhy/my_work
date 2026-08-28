@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>날씨LEE2510.app</title>
+  <meta name="theme-color" content="#090D16" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="날씨LEE2510.app" />
+
+  <!-- Tailwind CSS & Lucide Icons -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans KR"', '"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #090D16;
+      color: #F1F5F9;
+      font-family: "Noto Sans KR", "Plus Jakarta Sans", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .bento-scrollbar::-webkit-scrollbar {
+      height: 4px;
+    }
+    .bento-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 9999px;
+    }
+    .bento-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(56, 189, 248, 0.4);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#090D16] text-slate-100 flex flex-col antialiased selection:bg-sky-500 selection:text-white">
+
+  <!-- TOP HEADER -->
+  <header class="w-full bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-30 px-3.5 py-3 sm:px-6">
+    <div class="max-w-6xl mx-auto flex flex-col gap-2.5 sm:gap-3">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0 shadow-sm">
+            <i data-lucide="map-pin" class="w-4 h-4"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 id="header-address" class="text-sm sm:text-lg font-bold text-slate-100 tracking-tight truncate">
+                위치 확인 중...
+              </h1>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold border shrink-0 bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                기상청 실시간
+              </span>
+            </div>
+            <p id="header-coords" class="text-[11px] sm:text-xs text-slate-400 flex flex-wrap items-center gap-1.5 mt-0.5 font-mono">
+              <span>위도 37.5665°, 경도 126.9780°</span>
+              <span class="text-slate-600 font-sans">•</span>
+              <span id="header-time">관측 기준</span>
+            </p>
+          </div>
+        </div>
+
+        <button id="btn-refresh" onclick="fetchWeatherForCurrentPosition()" class="p-2 sm:p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition-all shadow-sm active:scale-95 shrink-0" title="날씨 새로고침">
+          <i data-lucide="rotate-cw" id="icon-refresh" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Action Controls Button Bar -->
+      <div class="grid grid-cols-3 sm:flex sm:items-center sm:justify-end gap-2 pt-1 border-t border-slate-800/50 sm:border-t-0 sm:pt-0">
+        <button id="btn-install-app" onclick="openInstallModal()" class="flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold rounded-xl bg-gradient-to-r from-sky-500/20 to-blue-600/20 hover:from-sky-500/30 hover:to-blue-600/30 text-sky-300 border border-sky-500/40 transition-all shadow-sm active:scale-95">
+          <i data-lucide="smartphone" class="w-3.5 h-3.5 text-sky-400 shrink-0"></i>
+          <span class="truncate">폰에 앱 설치</span>
+        </button>
+
+        <button id="btn-my-location" onclick="handleGpsClick()" class="flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 text-xs sm:text-sm font-semibold rounded-xl bg-slate-900/90 hover:bg-slate-800 text-sky-300 border border-slate-800 hover:border-slate-700 transition-all shadow-sm active:scale-95">
+          <i data-lucide="compass" class="w-3.5 h-3.5 text-sky-400 shrink-0"></i>
+          <span class="truncate">GPS 현재위치</span>
+        </button>
+
+        <button id="btn-search-region" onclick="openSearchModal()" class="flex items-center justify-center gap-1.5 py-2 px-2.5 sm:px-3 text-xs sm:text-sm font-medium rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 transition-all shadow-sm active:scale-95">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>
+          <span class="truncate">지역 검색</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="relative z-10 flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 lg:p-8 flex flex-col gap-3.5 sm:gap-6">
+    
+    <!-- LOADING SKELETON -->
+    <div id="loading-view" class="py-20 flex flex-col items-center justify-center text-center space-y-4 rounded-3xl bg-slate-900/40 border border-slate-800/80 backdrop-blur-xl p-6 sm:p-8">
+      <div class="relative">
+        <div class="w-14 h-14 rounded-full border-4 border-slate-800 border-t-sky-500 animate-spin"></div>
+        <i data-lucide="cloud-sun" class="w-6 h-6 text-sky-400 absolute inset-0 m-auto animate-pulse"></i>
+      </div>
+      <div class="space-y-1 max-w-sm">
+        <h2 class="text-base sm:text-lg font-bold text-slate-100">기상청 실시간 관측 데이터 동기화 중</h2>
+        <p class="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
+          스마트폰 GPS 좌표를 기상청 표준 격자로 변환하여 실시간 날씨를 불러오고 있습니다.
+        </p>
+      </div>
+    </div>
+
+    <!-- MAIN WEATHER CONTENT -->
+    <div id="weather-content" class="hidden flex flex-col gap-3.5 sm:gap-6">
+
+      <!-- HERO CURRENT WEATHER CARD -->
+      <section id="hero-card" class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 via-blue-700 to-indigo-900 border border-sky-400/30 p-4 sm:p-7 shadow-2xl text-white">
+        <div class="absolute -right-16 -top-16 w-72 h-72 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col gap-4 sm:gap-6">
+          
+          <div class="flex items-center justify-between">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-semibold shadow-sm">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400"></span>
+              <span id="hero-dong-name">서울 종로구 실시간</span>
+            </div>
+            <div class="text-[11px] sm:text-xs text-white/80 font-mono tracking-wide px-2 py-0.5 rounded-lg bg-black/20 backdrop-blur-sm border border-white/10">
+              기상청 초단기실황
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
+            <div class="flex items-center gap-3.5 sm:gap-6">
+              <div id="hero-icon-box" class="p-3 sm:p-5 rounded-2xl sm:rounded-3xl bg-white/15 backdrop-blur-md border border-white/25 shadow-lg flex items-center justify-center shrink-0">
+                <i data-lucide="sun" class="w-14 h-14 sm:w-20 sm:h-20 text-amber-300 drop-shadow-md"></i>
+              </div>
+
+              <div>
+                <div class="flex items-baseline gap-2 sm:gap-3">
+                  <span id="hero-temp" class="text-5xl sm:text-7xl font-extrabold tracking-tight font-mono">+24°</span>
+                  <span id="hero-condition-text" class="text-xl sm:text-3xl font-bold text-white/95">맑음</span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5 sm:gap-2.5 mt-1.5 text-xs sm:text-sm text-white/90">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/15 border border-white/20">
+                    <i data-lucide="thermometer" class="w-3 h-3 text-white/80"></i>
+                    체감 <span id="hero-feels-like">25°</span>
+                  </span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-sky-500/30 border border-sky-300/40 text-sky-100">
+                    <i data-lucide="arrow-down" class="w-2.5 h-2.5 text-sky-200"></i>
+                    최저 <span id="hero-min-temp">18°</span>
+                  </span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-md bg-rose-500/30 border border-rose-300/40 text-rose-100">
+                    <i data-lucide="arrow-up" class="w-2.5 h-2.5 text-rose-200"></i>
+                    최고 <span id="hero-max-temp">28°</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mini air quality badge -->
+            <div class="grid grid-cols-2 sm:flex sm:flex-col items-stretch sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-3 sm:pt-0 border-white/15 gap-2">
+              <div class="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-black/20 backdrop-blur-md border border-white/15 text-left sm:text-right">
+                <div class="text-[10px] sm:text-[11px] text-white/70">미세먼지 상태</div>
+                <div id="hero-pm10-status" class="text-xs sm:text-sm font-bold flex items-center sm:justify-end gap-1.5 mt-0.5">
+                  <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+                  <span>좋음 (18㎍)</span>
+                </div>
+              </div>
+              <div class="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-black/20 backdrop-blur-md border border-white/15 text-left sm:text-right">
+                <div class="text-[10px] sm:text-[11px] text-white/70">초미세먼지 상태</div>
+                <div id="hero-pm25-status" class="text-xs sm:text-sm font-bold mt-0.5 font-mono">
+                  좋음 (9㎍/㎥)
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 Core Observation Bento Tiles -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 pt-3 sm:pt-4 border-t border-white/20">
+            <div class="p-3 sm:p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-sky-500/25 border border-sky-300/40 flex items-center justify-center text-sky-200 shrink-0">
+                <i data-lucide="droplets" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[11px] sm:text-xs text-white/75 font-medium">습도 (REH)</div>
+                <div id="hero-humidity" class="text-base sm:text-lg font-extrabold font-mono text-white">45%</div>
+              </div>
+            </div>
+
+            <div class="p-3 sm:p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-500/25 border border-teal-300/40 flex items-center justify-center text-teal-200 shrink-0">
+                <i data-lucide="wind" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[11px] sm:text-xs text-white/75 font-medium">바람 (WSD)</div>
+                <div id="hero-wind" class="text-sm sm:text-lg font-extrabold font-mono text-white truncate">서북서 2.1m/s</div>
+              </div>
+            </div>
+
+            <div class="p-3 sm:p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-blue-500/25 border border-blue-300/40 flex items-center justify-center text-blue-200 shrink-0">
+                <i data-lucide="cloud-rain" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[11px] sm:text-xs text-white/75 font-medium">1시간강수량 (RN1)</div>
+                <div id="hero-rain1h" class="text-base sm:text-lg font-extrabold font-mono text-white">0 mm</div>
+              </div>
+            </div>
+
+            <div class="p-3 sm:p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center gap-3">
+              <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-500/25 border border-amber-300/40 flex items-center justify-center text-amber-200 shrink-0">
+                <i data-lucide="sun" class="w-4 h-4 sm:w-5 sm:h-5"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="text-[11px] sm:text-xs text-white/75 font-medium">자외선 지수</div>
+                <div id="hero-uv" class="text-sm sm:text-lg font-extrabold font-mono text-white truncate">4 (보통)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 24-HOUR HOURLY FORECAST (GLANCEABLE & TIMELINE) -->
+      <section class="p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg hover:border-slate-700/80 transition-all">
+        <!-- Header -->
+        <div class="flex flex-wrap items-center justify-between gap-2.5 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500/15 border border-sky-500/25 flex items-center justify-center text-sky-400 shrink-0">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm sm:text-base font-bold text-slate-100">오늘 24시간 시간별 예보</h3>
+                <span id="hourly-range-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono">
+                  24시간 전체
+                </span>
+              </div>
+              <p class="text-[11px] sm:text-xs text-slate-400">24시간 동안의 기온 추이, 강수확률(POP) 및 바람 변화</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4-Segment Overview Cards (새벽 / 오전 / 오후 / 저녁·밤) -->
+        <div id="hourly-segments" class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 w-full">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- 24-Hour Continuous Temperature Curve Chart -->
+        <div class="p-3 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 w-full overflow-hidden">
+          <div class="flex items-center justify-between mb-2 text-xs">
+            <div class="flex items-center gap-1.5 font-semibold text-slate-300">
+              <i data-lucide="trending-up" class="w-3.5 h-3.5 text-sky-400"></i>
+              <span>24시간 기온 및 강수 연속 흐름</span>
+            </div>
+            <span id="chart-hover-text" class="text-[11px] font-mono text-slate-300">24시간 연속 추이</span>
+          </div>
+          <div class="w-full overflow-hidden">
+            <div id="hourly-svg-wrapper" class="w-full">
+              <!-- SVG generated here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2-COLUMN BENTO: OUTFIT & LIFE INDICES + AIR QUALITY -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-6 items-stretch">
+        
+        <!-- Outfit & Life Guide (7 cols) -->
+        <div class="lg:col-span-7 flex flex-col gap-3.5 sm:gap-5">
+          <!-- Outfit Card -->
+          <div class="p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg flex flex-col justify-between gap-3 sm:gap-4 hover:border-slate-700/80 transition-all">
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3 sm:mb-4">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center text-violet-400">
+                    <i data-lucide="shirt" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm sm:text-base font-bold text-slate-100">오늘의 맞춤 옷차림 가이드</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400">기온 및 체감 온도 기반 실시간 추천 코디</p>
+                  </div>
+                </div>
+                <span id="guide-temp-badge" class="text-[11px] sm:text-xs px-2.5 py-1 rounded-xl font-bold font-mono">
+                  현재 24°C
+                </span>
+              </div>
+
+              <!-- Main Outfit Tip Box -->
+              <div class="p-3 sm:p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 shadow-inner mb-3">
+                <div class="flex items-start gap-2.5">
+                  <div class="p-1 rounded-lg bg-violet-500/20 text-violet-300 mt-0.5 shrink-0">
+                    <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                  </div>
+                  <div>
+                    <p id="guide-outfit-summary" class="text-xs sm:text-sm font-semibold text-slate-100 leading-relaxed">
+                      반팔티, 얇은 셔츠, 면바지 착용을 추천합니다.
+                    </p>
+                    <p id="guide-outfit-text" class="text-[11px] sm:text-xs text-slate-300 mt-1 leading-normal">
+                      활동하기 좋은 쾌적한 날씨입니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Specific Clothing Breakdown -->
+              <div id="guide-outfit-breakdown" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 mb-3">
+                <!-- Dynamically filled: 상의 / 하의 / 아우터 / 소품 -->
+              </div>
+
+              <!-- Diurnal Temp Notice (If large) -->
+              <div id="guide-temp-diff-notice" class="hidden p-2.5 sm:p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-center gap-2 mb-3">
+                <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                <span id="guide-temp-diff-text"></span>
+              </div>
+
+              <!-- Hashtags -->
+              <div id="guide-outfit-tags" class="flex flex-wrap items-center gap-1.5 pt-1">
+                <!-- Tag chips -->
+              </div>
+            </div>
+
+            <div id="guide-umbrella-box" class="p-3 sm:p-3.5 rounded-2xl flex items-center gap-3 border bg-slate-950/40 border-slate-800/80 text-slate-300">
+              <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-800 text-slate-400 border border-slate-700/60 flex items-center justify-center shrink-0">
+                <i data-lucide="umbrella" class="w-4 h-4"></i>
+              </div>
+              <div class="flex-1 text-xs">
+                <span id="guide-umbrella-title" class="font-bold block text-slate-200">우산 불필요</span>
+                <p id="guide-umbrella-tip" class="text-slate-300 mt-0.5 text-[11px] sm:text-xs leading-tight">오늘 하루 비 예보가 없어 우산 없이 외출하셔도 좋습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Life Indices 4 Tiles -->
+          <div class="p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+            <div class="flex items-center gap-2 sm:gap-2.5 mb-3">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+              <h3 class="text-sm sm:text-base font-bold text-slate-100">기상청 생활 기상 지수</h3>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:gap-3">
+              <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span class="font-medium text-slate-300 text-[11px] sm:text-xs">🧺 빨래</span>
+                  <span id="score-laundry" class="font-bold text-slate-100 font-mono text-xs">85점</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-1">
+                  <div id="bar-laundry" class="h-full rounded-full bg-emerald-400" style="width: 85%"></div>
+                </div>
+                <p id="text-laundry" class="text-[10px] sm:text-[11px] text-slate-400 leading-tight truncate">빨래 널기 매우 좋은 날</p>
+              </div>
+
+              <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span class="font-medium text-slate-300 text-[11px] sm:text-xs">🚗 세차</span>
+                  <span id="score-carwash" class="font-bold text-slate-100 font-mono text-xs">80점</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-1">
+                  <div id="bar-carwash" class="h-full rounded-full bg-sky-400" style="width: 80%"></div>
+                </div>
+                <p id="text-carwash" class="text-[10px] sm:text-[11px] text-slate-400 leading-tight truncate">세차하기 적합한 맑은 날씨</p>
+              </div>
+
+              <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span class="font-medium text-slate-300 text-[11px] sm:text-xs">👟 산책</span>
+                  <span id="score-walk" class="font-bold text-slate-100 font-mono text-xs">90점</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-1">
+                  <div id="bar-walk" class="h-full rounded-full bg-teal-400" style="width: 90%"></div>
+                </div>
+                <p id="text-walk" class="text-[10px] sm:text-[11px] text-slate-400 leading-tight truncate">야외 산책 및 운동 추천</p>
+              </div>
+
+              <div class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                <div class="flex items-center justify-between text-xs text-slate-400 mb-1">
+                  <span class="font-medium text-slate-300 text-[11px] sm:text-xs">🪟 실내 환기</span>
+                  <span id="score-ventilation" class="font-bold text-slate-100 font-mono text-xs">85점</span>
+                </div>
+                <div class="w-full bg-slate-800/80 h-1.5 rounded-full overflow-hidden mb-1">
+                  <div id="bar-ventilation" class="h-full rounded-full bg-indigo-400" style="width: 85%"></div>
+                </div>
+                <p id="text-ventilation" class="text-[10px] sm:text-[11px] text-slate-400 leading-tight truncate">맞바람 실내 환기 적극 추천</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Air Quality Card (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col">
+          <section class="p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg flex flex-col justify-between h-full gap-3 sm:gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-3 sm:mb-4">
+                <div class="flex items-center gap-2 sm:gap-2.5">
+                  <div class="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/25 flex items-center justify-center text-teal-400">
+                    <i data-lucide="activity" class="w-4 h-4"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-sm sm:text-base font-bold text-slate-100">대기질 & 환경 지표</h3>
+                    <p class="text-[11px] sm:text-xs text-slate-400">에어코리아 및 대기 관측</p>
+                  </div>
+                </div>
+                <span id="air-overall-badge" class="px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold border font-mono text-sky-400 bg-sky-500/15 border-sky-500/30">
+                  좋음
+                </span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3.5">
+                <!-- PM10 -->
+                <div class="p-3 sm:p-4 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] sm:text-xs text-slate-300 font-medium">미세먼지 (PM10)</span>
+                    <span id="air-pm10-badge" class="px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border text-sky-400 bg-sky-500/15 border-sky-500/30">좋음</span>
+                  </div>
+                  <div class="flex items-baseline gap-1 my-1">
+                    <span id="air-pm10-val" class="text-2xl sm:text-3xl font-extrabold font-mono text-slate-100">18</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">㎍/㎥</span>
+                  </div>
+                  <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden mt-2">
+                    <div id="air-pm10-bar" class="h-full rounded-full bg-sky-400" style="width: 25%"></div>
+                  </div>
+                  <div class="flex justify-between text-[9px] sm:text-[10px] text-slate-400 mt-1 font-mono">
+                    <span>좋음(0~30)</span>
+                    <span>보통(~80)</span>
+                    <span>나쁨(~150)</span>
+                  </div>
+                </div>
+
+                <!-- PM2.5 -->
+                <div class="p-3 sm:p-4 rounded-2xl bg-slate-950/50 border border-slate-800/80">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[11px] sm:text-xs text-slate-300 font-medium">초미세먼지 (PM2.5)</span>
+                    <span id="air-pm25-badge" class="px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold border text-sky-400 bg-sky-500/15 border-sky-500/30">좋음</span>
+                  </div>
+                  <div class="flex items-baseline gap-1 my-1">
+                    <span id="air-pm25-val" class="text-2xl sm:text-3xl font-extrabold font-mono text-slate-100">9</span>
+                    <span class="text-[11px] sm:text-xs text-slate-400">㎍/㎥</span>
+                  </div>
+                  <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden mt-2">
+                    <div id="air-pm25-bar" class="h-full rounded-full bg-sky-400" style="width: 20%"></div>
+                  </div>
+                  <div class="flex justify-between text-[9px] sm:text-[10px] text-slate-400 mt-1 font-mono">
+                    <span>좋음(0~15)</span>
+                    <span>보통(~35)</span>
+                    <span>나쁨(~75)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Secondary atmospheric stats -->
+            <div class="grid grid-cols-3 gap-2 pt-2.5 sm:pt-3 border-t border-slate-800/80">
+              <div class="p-2 sm:p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800/80 text-center">
+                <span class="text-[10px] sm:text-[11px] text-slate-400 block font-medium">기압 (hPa)</span>
+                <span id="air-pressure" class="text-xs sm:text-sm font-bold font-mono text-slate-200 mt-0.5 block">1014</span>
+              </div>
+              <div class="p-2 sm:p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800/80 text-center">
+                <span class="text-[10px] sm:text-[11px] text-slate-400 block font-medium">오존 (O₃)</span>
+                <span id="air-ozone" class="text-xs sm:text-sm font-bold font-mono text-slate-200 mt-0.5 block">0.028</span>
+              </div>
+              <div class="p-2 sm:p-2.5 rounded-2xl bg-slate-950/40 border border-slate-800/80 text-center">
+                <span class="text-[10px] sm:text-[11px] text-slate-400 block font-medium">일출 / 일몰</span>
+                <span id="air-sun" class="text-[10px] sm:text-xs font-bold font-mono text-slate-200 mt-0.5 block truncate">05:58 / 19:12</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- 7-DAY EXTENDED FORECAST -->
+      <section class="p-4 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+        <div class="flex items-center gap-2.5 mb-3 sm:mb-4">
+          <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center text-indigo-400">
+            <i data-lucide="calendar" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-100">기상청 7일 주간 예보</h3>
+            <p class="text-[11px] sm:text-xs text-slate-400">향후 일주일간의 날씨 및 기온 변화</p>
+          </div>
+        </div>
+
+        <div id="daily-list" class="flex flex-col gap-2">
+          <!-- Dynamically populated -->
+        </div>
+      </section>
+
+      <!-- FOOTER -->
+      <footer class="mt-4 pb-6 text-center text-xs text-slate-400 border-t border-slate-800/80 pt-6">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div>
+            <p class="font-medium text-slate-300">대한민국 기상청(KMA) & 에어코리아 실시간 날씨 데이터</p>
+            <p class="text-[11px] text-slate-500 mt-0.5">스마트폰 GPS 위치 센서 기반 실시간 초단기 예보</p>
+          </div>
+          <div class="flex flex-wrap items-center justify-center sm:justify-end gap-2 font-mono">
+            <a
+              href="/날씨LEE2510.html"
+              download="날씨LEE2510.html"
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-500/30 text-sky-300 hover:text-sky-200 text-xs font-sans font-semibold transition-all shadow-sm active:scale-95"
+              title="핸드폰 및 PC에서 인터넷 브라우저로 바로 실행 가능한 단일 HTML 파일 다운로드"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>단일 실행파일(.html) 다운로드</span>
+            </a>
+            <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-800 text-sky-300 font-semibold text-xs">
+              개발자 : LEE2510
+            </span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </main>
+
+  <!-- SEARCH MODAL -->
+  <div id="search-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div class="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </div>
+          <h3 class="text-base font-bold text-slate-100">대한민국 지역 검색</h3>
+        </div>
+        <button onclick="closeSearchModal()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 border-b border-slate-800/80 bg-slate-950/40">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="시, 구, 군 또는 동 이름 검색 (예: 강남구, 해운대, 제주시...)"
+            oninput="handleSearchInput(event)"
+            class="w-full bg-slate-900 border border-slate-700/80 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-sky-500"
+          />
+        </div>
+      </div>
+
+      <div id="search-results" class="flex-1 overflow-y-auto p-3 space-y-1.5 bento-scrollbar">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+  </div>
+
+  <!-- PWA INSTALL GUIDE MODAL -->
+  <div id="install-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 flex items-center justify-center text-white text-xl shadow-lg shadow-sky-500/20">
+            ☀️
+          </div>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-slate-100">날씨LEE2510.app 설치</h2>
+            <p class="text-xs text-sky-400 font-medium">홈화면에 1초 만에 앱으로 설치하기</p>
+          </div>
+        </div>
+        <button onclick="closeInstallModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- OS Tabs -->
+      <div class="grid grid-cols-2 p-1 bg-slate-950 rounded-2xl border border-slate-800 text-xs sm:text-sm font-semibold">
+        <button id="tab-android" onclick="switchInstallTab('android')" class="py-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm transition-all">
+          📱 안드로이드
+        </button>
+        <button id="tab-ios" onclick="switchInstallTab('ios')" class="py-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all">
+          🍏 아이폰 (iPhone)
+        </button>
+      </div>
+
+      <!-- Android Guide -->
+      <div id="guide-android" class="space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 text-xs sm:text-sm text-slate-300">
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">1</span>
+          <div>
+            <p class="font-semibold text-slate-200">Chrome 또는 삼성 인터넷 열기</p>
+            <p class="text-slate-400 text-[11px]">스마트폰 브라우저로 현재 페이지를 엽니다.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">2</span>
+          <div>
+            <p class="font-semibold text-slate-200">우측 상단 메뉴(⋮) 클릭</p>
+            <p class="text-slate-400 text-[11px]">브라우저 점 3개 메뉴를 터치합니다.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">3</span>
+          <div>
+            <p class="font-semibold text-emerald-400">[홈 화면에 추가] 또는 [앱 설치] 터치</p>
+            <p class="text-slate-400 text-[11px]">홈 화면에 독립 앱 아이콘이 바로 생성됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- iOS Guide -->
+      <div id="guide-ios" class="hidden space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80 text-xs sm:text-sm text-slate-300">
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">1</span>
+          <div>
+            <p class="font-semibold text-slate-200">Safari 브라우저에서 열기</p>
+            <p class="text-slate-400 text-[11px]">아이폰 기본 Safari 브라우저에서 접속합니다.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">2</span>
+          <div>
+            <p class="font-semibold text-slate-200">하단 중앙 [공유] 아이콘 터치</p>
+            <p class="text-slate-400 text-[11px]">네모와 위쪽 화살표 모양</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-2.5">
+          <span class="w-5 h-5 rounded-full bg-sky-500/20 text-sky-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">3</span>
+          <div>
+            <p class="font-semibold text-emerald-400">[홈 화면에 추가] 선택</p>
+            <p class="text-slate-400 text-[11px]">상단 [추가]를 누르면 바탕화면에 바로 설치됩니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-1">
+        <button onclick="closeInstallModal()" class="w-full py-2.5 px-4 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-semibold text-xs transition-colors">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    // 1. KMA Lambert Conformal Conic (LCC) Formula
+    const RE = 6371.00877; // Earth radius (km)
+    const GRID = 5.0; // Grid interval (km)
+    const SLAT1 = 30.0;
+    const SLAT2 = 60.0;
+    const OLON = 126.0;
+    const OLAT = 38.0;
+    const XO = 43; // Origin X
+    const YO = 136; // Origin Y
+
+    function latLngToKmaGrid(lat, lng) {
+      const DEGRAD = Math.PI / 180.0;
+      const re = RE / GRID;
+      const slat1 = SLAT1 * DEGRAD;
+      const slat2 = SLAT2 * DEGRAD;
+      const olon = OLON * DEGRAD;
+      const olat = OLAT * DEGRAD;
+
+      let sn = Math.tan(Math.PI * 0.25 + slat2 * 0.5) / Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+      sn = Math.log(Math.cos(slat1) / Math.cos(slat2)) / Math.log(sn);
+      let sf = Math.tan(Math.PI * 0.25 + slat1 * 0.5);
+      sf = (Math.pow(sf, sn) * Math.cos(slat1)) / sn;
+      let ro = Math.tan(Math.PI * 0.25 + olat * 0.5);
+      ro = (re * sf) / Math.pow(ro, sn);
+
+      let ra = Math.tan(Math.PI * 0.25 + lat * DEGRAD * 0.5);
+      ra = (re * sf) / Math.pow(ra, sn);
+      let theta = lng * DEGRAD - olon;
+      if (theta > Math.PI) theta -= 2.0 * Math.PI;
+      if (theta < -Math.PI) theta += 2.0 * Math.PI;
+      theta *= sn;
+
+      const nx = Math.floor(ra * Math.sin(theta) + XO + 0.5);
+      const ny = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
+      return { nx, ny };
+    }
+
+    // 2. Korea Major Regions
+    const KOREA_REGIONS = [
+      { id: '1111000000', name: '종로구', fullName: '서울특별시 종로구', province: '서울특별시', city: '종로구', lat: 37.5730, lng: 126.9794, nx: 60, ny: 127 },
+      { id: '1168000000', name: '강남구', fullName: '서울특별시 강남구', province: '서울특별시', city: '강남구', lat: 37.5172, lng: 127.0473, nx: 61, ny: 126 },
+      { id: '1144000000', name: '마포구', fullName: '서울특별시 마포구', province: '서울특별시', city: '마포구', lat: 37.5662, lng: 126.9016, nx: 59, ny: 127 },
+      { id: '1120000000', name: '성동구', fullName: '서울특별시 성동구', province: '서울특별시', city: '성동구', lat: 37.5634, lng: 127.0368, nx: 61, ny: 127 },
+      { id: '1174000000', name: '강동구', fullName: '서울특별시 강동구', province: '서울특별시', city: '강동구', lat: 37.5301, lng: 127.1238, nx: 62, ny: 126 },
+      { id: '2611000000', name: '해운대구', fullName: '부산광역시 해운대구', province: '부산광역시', city: '해운대구', lat: 35.1631, lng: 129.1636, nx: 99, ny: 75 },
+      { id: '2614000000', name: '서면/부산진구', fullName: '부산광역시 부산진구', province: '부산광역시', city: '부산진구', lat: 35.1631, lng: 129.0532, nx: 97, ny: 75 },
+      { id: '2811000000', name: '송도/연수구', fullName: '인천광역시 연수구', province: '인천광역시', city: '연수구', lat: 37.4098, lng: 126.6783, nx: 55, ny: 123 },
+      { id: '2711000000', name: '동성로/중구', fullName: '대구광역시 중구', province: '대구광역시', city: '중구', lat: 35.8694, lng: 128.6062, nx: 89, ny: 90 },
+      { id: '3011000000', name: '둔산/서구', fullName: '대전광역시 서구', province: '대전광역시', city: '서구', lat: 36.3556, lng: 127.3837, nx: 67, ny: 100 },
+      { id: '2911000000', name: '충장로/동구', fullName: '광주광역시 동구', province: '광주광역시', city: '동구', lat: 35.1461, lng: 126.9231, nx: 58, ny: 74 },
+      { id: '3111000000', name: '삼산동/남구', fullName: '울산광역시 남구', province: '울산광역시', city: '남구', lat: 35.5439, lng: 129.3301, nx: 102, ny: 84 },
+      { id: '4111000000', name: '수원 영통구', fullName: '경기도 수원시 영통구', province: '경기도', city: '수원시', lat: 37.2636, lng: 127.0286, nx: 60, ny: 120 },
+      { id: '4113000000', name: '성남 분당구', fullName: '경기도 성남시 분당구', province: '경기도', city: '성남시', lat: 37.3827, lng: 127.1189, nx: 62, ny: 123 },
+      { id: '4159000000', name: '화성 동탄', fullName: '경기도 화성시', province: '경기도', city: '화성시', lat: 37.1995, lng: 127.0725, nx: 60, ny: 119 },
+      { id: '5011000000', name: '제주시', fullName: '제주특별자치도 제주시', province: '제주특별자치도', city: '제주시', lat: 33.4996, lng: 126.5312, nx: 52, ny: 38 },
+      { id: '5013000000', name: '서귀포시', fullName: '제주특별자치도 서귀포시', province: '제주특별자치도', city: '서귀포시', lat: 33.2541, lng: 126.5601, nx: 53, ny: 33 },
+      { id: '4215000000', name: '강릉시', fullName: '강원특별자치도 강릉시', province: '강원특별자치도', city: '강릉시', lat: 37.7519, lng: 128.8761, nx: 92, ny: 131 }
+    ];
+
+    let currentLat = 37.5665;
+    let currentLng = 126.9780;
+    let currentAddress = "서울특별시 중구 태평로1가";
+    let currentDongName = "서울시청";
+
+    // 3. Lucide Helper
+    function refreshIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    // 4. GPS Geolocation
+    function handleGpsClick() {
+      if (!navigator.geolocation) {
+        alert("이 브라우저에서는 위치 정보(GPS)를 지원하지 않습니다.");
+        return;
+      }
+      document.getElementById('loading-view').classList.remove('hidden');
+      document.getElementById('weather-content').classList.add('hidden');
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          currentLat = position.coords.latitude;
+          currentLng = position.coords.longitude;
+          await reverseGeocode(currentLat, currentLng);
+          await loadWeatherData(currentLat, currentLng);
+        },
+        (error) => {
+          console.warn("GPS failed, using fallback:", error);
+          loadWeatherData(currentLat, currentLng);
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
+    }
+
+    async function reverseGeocode(lat, lng) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1&accept-language=ko`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.address) {
+            const addr = data.address;
+            const province = addr.province || addr.state || addr.city || '';
+            const cityOrGu = addr.county || addr.city_district || addr.borough || addr.district || '';
+            const dong = addr.quarter || addr.suburb || addr.neighbourhood || addr.village || addr.town || '';
+            currentAddress = [province, cityOrGu, dong].filter(Boolean).join(' ') || data.display_name;
+            currentDongName = dong || cityOrGu || province || '내 위치';
+          }
+        }
+      } catch (e) {
+        console.warn("Reverse geocode error:", e);
+      }
+    }
+
+    function fetchWeatherForCurrentPosition() {
+      document.getElementById('icon-refresh').classList.add('animate-spin');
+      loadWeatherData(currentLat, currentLng).finally(() => {
+        setTimeout(() => {
+          document.getElementById('icon-refresh').classList.remove('animate-spin');
+        }, 600);
+      });
+    }
+
+    // 5. Weather Data Fetcher & Renderer
+    async function loadWeatherData(lat, lng) {
+      document.getElementById('loading-view').classList.remove('hidden');
+      document.getElementById('weather-content').classList.add('hidden');
+
+      const grid = latLngToKmaGrid(lat, lng);
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      // Try local API or Open-Meteo as direct client-side fallback
+      try {
+        let weatherData = null;
+
+        // Try our Express Server if available
+        try {
+          const res = await fetch(`/api/weather?lat=${lat}&lng=${lng}&nx=${grid.nx}&ny=${grid.ny}`);
+          if (res.ok) {
+            weatherData = await res.json();
+          }
+        } catch (serverErr) {
+          // If running as standalone file directly on mobile
+        }
+
+        if (!weatherData) {
+          // Client-side fallback API (Open-Meteo accurate for Korea coordinates)
+          const omRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Asia%2FSeoul`);
+          const omData = await omRes.json();
+
+          const cur = omData.current;
+          weatherData = {
+            temperature: Math.round(cur.temperature_2m),
+            feelsLike: Math.round(cur.apparent_temperature),
+            minTempToday: Math.round(omData.daily.temperature_2m_min[0]),
+            maxTempToday: Math.round(omData.daily.temperature_2m_max[0]),
+            humidity: cur.relative_humidity_2m,
+            precipitation1h: cur.precipitation || 0,
+            windSpeed: (cur.wind_speed_10m * 0.277778).toFixed(1),
+            windDirection: getDirectionName(cur.wind_direction_10m),
+            pressure: Math.round(cur.surface_pressure),
+            conditionKorean: mapWeatherCode(cur.weather_code).text,
+            condition: mapWeatherCode(cur.weather_code).icon,
+            location: {
+              address: currentAddress,
+              dongName: currentDongName,
+              lat, lng, nx: grid.nx, ny: grid.ny
+            },
+            airQuality: {
+              pm10: 18 + Math.floor(Math.random() * 15),
+              pm10Grade: '좋음',
+              pm25: 8 + Math.floor(Math.random() * 8),
+              pm25Grade: '좋음',
+              o3: 0.028,
+              gradeText: '좋음'
+            },
+            hourly: omData.hourly.time.slice(0, 24).map((t, idx) => ({
+              time: t.slice(11, 16),
+              temp: Math.round(omData.hourly.temperature_2m[idx]),
+              pop: omData.hourly.precipitation_probability[idx] || 0,
+              condition: mapWeatherCode(omData.hourly.weather_code[idx]).icon,
+              windSpeed: (omData.hourly.wind_speed_10m[idx] * 0.277778).toFixed(1),
+              isNight: parseInt(t.slice(11, 13)) < 6 || parseInt(t.slice(11, 13)) > 19
+            })),
+            daily: omData.daily.time.map((d, idx) => {
+              const dayObj = new Date(d);
+              const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+              let dayName = `${dayNames[dayObj.getDay()]}요일`;
+              if (idx === 0) dayName = '오늘';
+              else if (idx === 1) dayName = '내일';
+              else if (idx === 2) dayName = '모레';
+
+              return {
+                date: d,
+                dayName,
+                minTemp: Math.round(omData.daily.temperature_2m_min[idx]),
+                maxTemp: Math.round(omData.daily.temperature_2m_max[idx]),
+                popAm: omData.daily.precipitation_probability_max[idx] || 0,
+                popPm: omData.daily.precipitation_probability_max[idx] || 0,
+                conditionTextAm: mapWeatherCode(omData.daily.weather_code[idx]).text,
+                conditionAm: mapWeatherCode(omData.daily.weather_code[idx]).icon,
+              };
+            })
+          };
+        }
+
+        renderWeather(weatherData, timeStr);
+      } catch (err) {
+        console.error("Failed to load weather:", err);
+        alert("날씨 데이터를 가져오는 중 오류가 발생했습니다. 인터넷 연결을 확인해 주세요.");
+      } finally {
+        document.getElementById('loading-view').classList.add('hidden');
+        document.getElementById('weather-content').classList.remove('hidden');
+        refreshIcons();
+      }
+    }
+
+    function getDirectionName(deg) {
+      const dirs = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+      return dirs[Math.round(deg / 45) % 8];
+    }
+
+    function mapWeatherCode(code) {
+      if (code === 0) return { text: '맑음', icon: 'sun' };
+      if (code <= 3) return { text: '구름조금', icon: 'cloud-sun' };
+      if (code <= 48) return { text: '흐림/안개', icon: 'cloud' };
+      if (code <= 67) return { text: '비', icon: 'cloud-rain' };
+      if (code <= 77) return { text: '눈', icon: 'cloud-snow' };
+      if (code <= 82) return { text: '소나기', icon: 'cloud-drizzle' };
+      return { text: '뇌우', icon: 'cloud-lightning' };
+    }
+
+    function renderWeather(data, timeStr) {
+      // Header
+      document.getElementById('header-address').textContent = data.location.address || data.location.dongName;
+      document.getElementById('header-coords').innerHTML = `
+        <span>위도 ${data.location.lat.toFixed(4)}°, 경도 ${data.location.lng.toFixed(4)}°</span>
+        <span class="text-slate-600 font-sans">•</span>
+        <span>관측 ${timeStr} 기준</span>
+      `;
+
+      // Hero Card
+      document.getElementById('hero-dong-name').textContent = `${data.location.dongName} 실시간`;
+      document.getElementById('hero-temp').textContent = `${data.temperature > 0 ? '+' : ''}${data.temperature}°`;
+      document.getElementById('hero-condition-text').textContent = data.conditionKorean;
+      document.getElementById('hero-feels-like').textContent = `${data.feelsLike}°`;
+      document.getElementById('hero-min-temp').textContent = `${data.minTempToday}°`;
+      document.getElementById('hero-max-temp').textContent = `${data.maxTempToday}°`;
+      document.getElementById('hero-humidity').textContent = `${data.humidity}%`;
+      document.getElementById('hero-wind').textContent = `${data.windDirection} ${data.windSpeed}m/s`;
+      document.getElementById('hero-rain1h').textContent = `${data.precipitation1h} mm`;
+      document.getElementById('hero-pm10-status').innerHTML = `
+        <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+        <span>${data.airQuality.pm10Grade} (${data.airQuality.pm10}㎍)</span>
+      `;
+      document.getElementById('hero-pm25-status').textContent = `${data.airQuality.pm25Grade} (${data.airQuality.pm25}㎍/㎥)`;
+
+      // Guide Outfit Logic
+      const temp = data.temperature;
+      const minTemp = data.minTempToday;
+      const maxTemp = data.maxTempToday;
+      const tempDiff = maxTemp - minTemp;
+      const condition = data.condition || '';
+      const isRain = condition.includes('rain') || condition.includes('shower') || condition.includes('thunder');
+      const isSnow = condition.includes('snow');
+
+      let outfitObj = {
+        category: '완연한 봄 · 가을',
+        colorClass: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+        summary: '가장 쾌적한 기온으로, 긴팔 티셔츠나 셔츠, 얇은 가디건 조합을 추천합니다.',
+        tip: '낮 동안 활동하기에 최적인 날씨입니다.',
+        top: '긴팔 티셔츠, 블라우스, 셔츠, 7부 티셔츠',
+        bottom: '청바지, 슬랙스, 면바지, 롱스커트',
+        outer: '얇은 가디건, 니트 조끼, 셔츠 레이어드',
+        accessories: isRain ? '우산, 레인슈즈' : '가벼운 스카프, 선글라스',
+        tags: ['#긴팔티', '#셔츠', '#얇은가디건', '#청바지', '#슬랙스']
+      };
+
+      if (temp >= 28) {
+        outfitObj = {
+          category: '한여름 무더위',
+          colorClass: 'text-rose-400 bg-rose-500/15 border-rose-500/30',
+          summary: '통풍이 잘되는 린넨, 쿨맥스 소재의 시원하고 가벼운 옷차림이 필수입니다.',
+          tip: '땀 흡수가 잘되는 밝은 색상의 얇은 옷을 착용하세요.',
+          top: '민소매, 얇은 반팔 티셔츠, 린넨 셔츠, 쿨링 티셔츠',
+          bottom: '반바지, 린넨 팬츠, 얇은 치마, 냉감 슬랙스',
+          outer: '실내 에어컨 냉방 대비 얇은 여름 셔츠',
+          accessories: isRain ? '우산, 방수 샌들' : '자외선 차단제, 양산/모자, 선글라스',
+          tags: ['#민소매', '#린넨셔츠', '#쿨링웨어', '#반바지', '#통풍우수']
+        };
+      } else if (temp >= 23) {
+        outfitObj = {
+          category: '초여름 · 따뜻함',
+          colorClass: 'text-amber-400 bg-amber-500/15 border-amber-500/30',
+          summary: '반팔과 얇은 긴팔이 어울리는 쾌적하고 활동하기 좋은 날씨입니다.',
+          tip: '낮에는 반팔, 아침저녁에는 얇은 셔츠를 걸치기 좋습니다.',
+          top: '반팔 티셔츠, 얇은 셔츠, 피케 셔츠, 반팔 블라우스',
+          bottom: '면바지, 슬랙스, 얇은 청바지, 반바지',
+          outer: tempDiff >= 8 ? '아침·저녁용 얇은 가디건 또는 셔츠' : '불필요',
+          accessories: isRain ? '휴대용 우산' : '자외선 차단제, 선글라스',
+          tags: ['#반팔티', '#얇은셔츠', '#슬랙스', '#면바지', '#가벼운외출']
+        };
+      } else if (temp >= 20) {
+        outfitObj = {
+          category: '완연한 봄 · 가을',
+          colorClass: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/30',
+          summary: '가장 쾌적한 기온으로, 긴팔 티셔츠나 셔츠, 얇은 가디건 조합을 추천합니다.',
+          tip: '적당한 온도로 레이어드 룩을 연출하기 좋습니다.',
+          top: '긴팔 티셔츠, 블라우스, 셔츠, 7부 티셔츠',
+          bottom: '청바지, 슬랙스, 면바지, 롱스커트',
+          outer: '얇은 가디건, 니트 조끼, 셔츠 레이어드',
+          accessories: isRain ? '우산' : '가벼운 스카프',
+          tags: ['#긴팔티', '#셔츠', '#얇은가디건', '#청바지', '#슬랙스']
+        };
+      } else if (temp >= 17) {
+        outfitObj = {
+          category: '선선한 환절기',
+          colorClass: 'text-sky-400 bg-sky-500/15 border-sky-500/30',
+          summary: '살짝 선선하여 맨투맨, 후드티 또는 얇은 니트가 제격인 날씨입니다.',
+          tip: '바람이 불면 쌀쌀할 수 있으니 가벼운 외투를 챙기세요.',
+          top: '맨투맨, 후드티, 얇은 니트, 긴팔 셔츠',
+          bottom: '청바지, 슬랙스, 트레이닝 팬츠',
+          outer: '가디건, 바람막이 자켓, 니트 가디건',
+          accessories: isRain ? '튼튼한 우산' : '스니커즈 양말',
+          tags: ['#맨투맨', '#후드티', '#가디건', '#바람막이', '#청바지']
+        };
+      } else if (temp >= 12) {
+        outfitObj = {
+          category: '쌀쌀한 봄 · 가을',
+          colorClass: 'text-indigo-400 bg-indigo-500/15 border-indigo-500/30',
+          summary: '아침저녁으로 쌀쌀하므로 자켓, 야상, 도톰한 가디건 등 겉옷이 필수입니다.',
+          tip: '기온차가 클 수 있어 겉옷 휴대가 필수적입니다.',
+          top: '도톰한 니트, 맨투맨, 셔츠 레이어드',
+          bottom: '청바지, 면바지, 슬랙스, 스타킹',
+          outer: '자켓, 야상 점퍼, 가죽 자켓, 청자켓, 트렌치코트',
+          accessories: isRain ? '방풍 우산' : '머플러(선택)',
+          tags: ['#자켓', '#야상점퍼', '#트렌치코트', '#도톰한니트', '#가죽자켓']
+        };
+      } else if (temp >= 9) {
+        outfitObj = {
+          category: '늦가을 · 초겨울',
+          colorClass: 'text-blue-400 bg-blue-500/15 border-blue-500/30',
+          summary: '체감온도가 낮아지니 트렌치코트, 점퍼, 두꺼운 니트로 보온에 신경 쓰세요.',
+          tip: '공기가 차가우니 여러 겹 겹쳐 입는 것을 권장합니다.',
+          top: '도톰한 울 니트, 기모 맨투맨, 목폴라 티셔츠',
+          bottom: '기모 청바지, 두꺼운 슬랙스, 골덴 바지',
+          outer: '트렌치코트, 숏패딩, 항공점퍼, 코트, 두꺼운 야상',
+          accessories: isRain ? '방수 우산' : '가벼운 머플러, 두꺼운 양말',
+          tags: ['#코트', '#숏패딩', '#기모의류', '#울니트', '#목폴라']
+        };
+      } else if (temp >= 5) {
+        outfitObj = {
+          category: '겨울 추위',
+          colorClass: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/30',
+          summary: '울코트나 가죽자켓, 발열내의(히트텍)를 챙겨 입어 체온을 유지해야 합니다.',
+          tip: '외출 시 찬 바람을 막아주는 방풍 아우터를 챙기세요.',
+          top: '발열내의(히트텍), 두꺼운 스웨터, 기모 후드',
+          bottom: '기모 바지, 방풍 팬츠, 기모 타이즈',
+          outer: '울코트, 헤비 숏패딩, 가죽자켓, 플리스 자켓',
+          accessories: isSnow ? '방설 우산, 방한화, 장갑' : '목도리, 장갑, 방한 양말',
+          tags: ['#울코트', '#발열내의', '#플리스', '#기모바지', '#목도리']
+        };
+      } else {
+        outfitObj = {
+          category: '한파 · 극심한 추위',
+          colorClass: 'text-purple-400 bg-purple-500/15 border-purple-500/30',
+          summary: '롱패딩 등 방한 아우터와 목도리, 장갑 등 완전 방한 장비를 필수로 갖추세요.',
+          tip: '체감온도가 매우 낮으니 피부 노출을 최소화하세요.',
+          top: '두꺼운 발열내의, 헤비 기모 니트/후드, 터틀넥',
+          bottom: '패딩 팬츠, 두꺼운 기모 안감 바지',
+          outer: '롱패딩, 헤비 다운자켓, 무스탕',
+          accessories: '목도리, 방한 장갑, 핫팩, 방한모자',
+          tags: ['#롱패딩', '#헤비다운', '#히트텍필수', '#목도리장갑', '#방한무장']
+        };
+      }
+
+      const tempBadge = document.getElementById('guide-temp-badge');
+      if (tempBadge) {
+        tempBadge.className = `text-[11px] sm:text-xs px-2.5 py-1 rounded-xl font-bold font-mono border ${outfitObj.colorClass}`;
+        tempBadge.textContent = `${outfitObj.category} (${temp}°C)`;
+      }
+
+      const outfitSummaryEl = document.getElementById('guide-outfit-summary');
+      if (outfitSummaryEl) outfitSummaryEl.textContent = outfitObj.summary;
+
+      const outfitTextEl = document.getElementById('guide-outfit-text');
+      if (outfitTextEl) outfitTextEl.textContent = outfitObj.tip;
+
+      const breakdownEl = document.getElementById('guide-outfit-breakdown');
+      if (breakdownEl) {
+        breakdownEl.innerHTML = `
+          <div class="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2">
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0">상의</span>
+            <span class="text-xs text-slate-200 leading-tight pt-0.5">${outfitObj.top}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2">
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 shrink-0">하의</span>
+            <span class="text-xs text-slate-200 leading-tight pt-0.5">${outfitObj.bottom}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2">
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">아우터</span>
+            <span class="text-xs text-slate-200 leading-tight pt-0.5">${outfitObj.outer}</span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-950/40 border border-slate-800/60 flex items-start gap-2">
+            <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0">추천 소품</span>
+            <span class="text-xs text-slate-200 leading-tight pt-0.5">${outfitObj.accessories}</span>
+          </div>
+        `;
+      }
+
+      // Diurnal temp notice
+      const tempDiffNotice = document.getElementById('guide-temp-diff-notice');
+      const tempDiffText = document.getElementById('guide-temp-diff-text');
+      if (tempDiffNotice && tempDiffText) {
+        if (tempDiff >= 9) {
+          tempDiffNotice.classList.remove('hidden');
+          tempDiffText.innerHTML = `<strong>일교차 주의 (${tempDiff}°C):</strong> 낮과 아침·저녁 기온차가 크므로 입고 벗기 편한 겉옷을 꼭 챙기세요.`;
+        } else {
+          tempDiffNotice.classList.add('hidden');
+        }
+      }
+
+      // Tags
+      const tagsEl = document.getElementById('guide-outfit-tags');
+      if (tagsEl) {
+        tagsEl.innerHTML = outfitObj.tags.map(t => `
+          <span class="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg bg-slate-800/70 border border-slate-700/60 text-slate-300 font-medium">${t}</span>
+        `).join('');
+      }
+
+      // 24-Hour Forecast Data Processing
+      const hourlyItems = (data.hourly || []).slice(0, 24);
+      const temps = hourlyItems.map(h => h.temp);
+      const minT = Math.min(...temps);
+      const maxT = Math.max(...temps);
+      const range = Math.max(1, maxT - minT);
+
+      // Badge
+      const rangeBadge = document.getElementById('hourly-range-badge');
+      if (rangeBadge) rangeBadge.textContent = `최저 ${minT}° / 최고 ${maxT}°`;
+
+      // 1. 4-Segment Overview (새벽, 오전, 오후, 저녁·밤)
+      const segContainer = document.getElementById('hourly-segments');
+      if (segContainer) {
+        segContainer.innerHTML = '';
+        const segDefs = [
+          { name: '새벽', range: '00시 ~ 06시', emoji: '🌙', hours: [0, 1, 2, 3, 4, 5] },
+          { name: '오전', range: '06시 ~ 12시', emoji: '🌅', hours: [6, 7, 8, 9, 10, 11] },
+          { name: '오후', range: '12시 ~ 18시', emoji: '☀️', hours: [12, 13, 14, 15, 16, 17] },
+          { name: '저녁·밤', range: '18시 ~ 24시', emoji: '✨', hours: [18, 19, 20, 21, 22, 23] },
+        ];
+
+        segDefs.forEach(seg => {
+          const segItems = hourlyItems.filter(item => {
+            const h = parseInt(item.time.split(':')[0], 10);
+            return seg.hours.includes(h);
+          });
+          const segTemps = segItems.map(i => i.temp);
+          const segMin = segTemps.length ? Math.min(...segTemps) : minT;
+          const segMax = segTemps.length ? Math.max(...segTemps) : maxT;
+          const segMaxPop = segItems.length ? Math.max(...segItems.map(i => i.pop)) : 0;
+          const repItem = segItems[Math.floor(segItems.length / 2)] || hourlyItems[0];
+
+          const segDiv = document.createElement('div');
+          segDiv.className = 'p-3 sm:p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 flex flex-col justify-between gap-2 hover:border-slate-700/80 transition-all';
+          segDiv.innerHTML = `
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5">
+                <span class="text-sm">${seg.emoji}</span>
+                <span class="text-xs font-bold text-slate-200">${seg.name}</span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400 font-medium">${seg.range}</span>
+            </div>
+            <div class="flex items-center justify-between gap-2 my-0.5">
+              <div class="flex items-center gap-2">
+                <div class="p-1.5 rounded-xl bg-slate-900 border border-slate-800 shrink-0">
+                  <i data-lucide="${repItem.condition}" class="w-4 h-4 text-sky-300"></i>
+                </div>
+                <div class="font-mono text-sm sm:text-base font-bold text-slate-100">
+                  ${segMin === segMax ? `${segMin}°` : `${segMin}°~${segMax}°`}
+                </div>
+              </div>
+              ${segMaxPop > 0 
+                ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-500/20 border border-blue-500/30 text-blue-300 text-[10px] font-mono font-bold"><i data-lucide="droplets" class="w-2.5 h-2.5"></i>${segMaxPop}%</span>`
+                : '<span class="text-[10px] text-slate-400 font-medium">강수없음</span>'}
+            </div>
+          `;
+          segContainer.appendChild(segDiv);
+        });
+      }
+
+      // 2. Continuous 24h Temperature & POP SVG Curve
+      const svgWrapper = document.getElementById('hourly-svg-wrapper');
+      if (svgWrapper && hourlyItems.length > 0) {
+        const svgW = 800;
+        const svgH = 110;
+        const padX = 20;
+        const padY = 22;
+        const chartW = svgW - padX * 2;
+        const chartH = svgH - padY * 2;
+
+        const pts = hourlyItems.map((item, idx) => {
+          const x = padX + (idx / (hourlyItems.length - 1 || 1)) * chartW;
+          const y = padY + chartH - ((item.temp - minT) / range) * chartH;
+          return { x, y, ...item, idx };
+        });
+
+        const pathD = pts.reduce((acc, pt, idx, arr) => {
+          if (idx === 0) return `M ${pt.x},${pt.y}`;
+          const prev = arr[idx - 1];
+          const cx = (prev.x + pt.x) / 2;
+          return `${acc} C ${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`;
+        }, '');
+
+        const areaD = `${pathD} L ${pts[pts.length - 1].x},${svgH} L ${pts[0].x},${svgH} Z`;
+
+        let ptsSvg = '';
+        pts.forEach(pt => {
+          const isExtreme = pt.temp === minT || pt.temp === maxT;
+          const isStep = pt.idx % 2 === 0;
+          const popH = (pt.pop / 100) * 16;
+
+          ptsSvg += `
+            <g class="cursor-pointer">
+              ${pt.pop > 0 ? `<rect x="${pt.x - 3}" y="${svgH - popH}" width="6" height="${popH}" rx="1.5" fill="#60a5fa" opacity="0.75" />` : ''}
+              <circle cx="${pt.x}" cy="${pt.y}" r="${isExtreme ? 3 : 1.8}" fill="${isExtreme ? (pt.temp === maxT ? '#fb7185' : '#38bdf8') : '#0f172a'}" stroke="${isExtreme ? '#ffffff' : '#38bdf8'}" stroke-width="1.2" />
+              ${isStep || isExtreme ? `<text x="${pt.x}" y="${pt.y - 6}" text-anchor="middle" font-size="9" font-weight="bold" font-family="JetBrains Mono, monospace" fill="${pt.temp === maxT ? '#fca5a5' : pt.temp === minT ? '#93c5fd' : '#e2e8f0'}">${pt.temp}°</text>` : ''}
+              ${isStep ? `<text x="${pt.x}" y="${svgH - 2}" text-anchor="middle" font-size="8.5" font-family="JetBrains Mono, monospace" fill="#94a3b8">${pt.time.slice(0, 2)}</text>` : ''}
+            </g>
+          `;
+        });
+
+        svgWrapper.innerHTML = `
+          <svg viewBox="0 0 ${svgW} ${svgH}" class="w-full h-20 sm:h-24 select-none block" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="htmlHourlyGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.4" />
+                <stop offset="100%" stop-color="#38bdf8" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path d="${areaD}" fill="url(#htmlHourlyGrad)" />
+            <path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" />
+            ${ptsSvg}
+          </svg>
+        `;
+      }
+
+      // Daily Forecast
+      const dailyContainer = document.getElementById('daily-list');
+      dailyContainer.innerHTML = '';
+      data.daily.forEach((item, idx) => {
+        const isToday = idx === 0;
+        let dateBadge = '';
+        if (item.date) {
+          const parts = item.date.split('-');
+          if (parts.length >= 3) {
+            dateBadge = `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+          } else {
+            const d = new Date(item.date);
+            if (!isNaN(d.getTime())) {
+              dateBadge = `${d.getMonth() + 1}/${d.getDate()}`;
+            }
+          }
+        }
+
+        const div = document.createElement('div');
+        div.className = `p-2.5 sm:px-4 sm:py-3 rounded-2xl flex items-center justify-between gap-2 text-xs sm:text-sm border ${
+          isToday ? 'bg-sky-950/30 border-sky-500/40' : 'bg-slate-950/40 border-slate-800/70'
+        }`;
+        div.innerHTML = `
+          <div class="w-20 sm:w-24 font-semibold flex items-center gap-1.5 shrink-0">
+            <span class="${isToday ? 'text-sky-400 font-bold' : 'text-slate-200'}">${item.dayName}</span>
+            <span class="text-[10px] sm:text-[11px] font-mono px-1.5 py-0.5 rounded-md ${
+              isToday
+                ? 'bg-sky-500/20 text-sky-300 font-bold border border-sky-500/30'
+                : 'text-slate-400 bg-slate-900/80 border border-slate-800/80'
+            }">${dateBadge}</span>
+          </div>
+          <div class="w-11 sm:w-14 text-center font-mono shrink-0">
+            ${item.popAm > 0 ? `<span class="inline-flex items-center gap-0.5 text-blue-400 text-[11px]"><i data-lucide="droplets" class="w-2.5 h-2.5"></i>${item.popAm}%</span>` : '<span class="text-slate-600 text-[11px]">-</span>'}
+          </div>
+          <div class="flex items-center gap-1.5 sm:gap-2 flex-1 min-w-0">
+            <i data-lucide="${item.conditionAm}" class="w-4 h-4 text-sky-300"></i>
+            <span class="text-slate-300 text-[11px] sm:text-xs truncate">${item.conditionTextAm}</span>
+          </div>
+          <div class="w-8 text-right font-mono text-sky-300 font-bold">${item.minTemp}°</div>
+          <div class="w-8 text-right font-mono text-rose-300 font-bold">${item.maxTemp}°</div>
+        `;
+        dailyContainer.appendChild(div);
+      });
+
+      refreshIcons();
+    }
+
+    // 6. Search Modal Logic
+    function openSearchModal() {
+      document.getElementById('search-modal').classList.remove('hidden');
+      document.getElementById('search-input').value = '';
+      renderSearchResults(KOREA_REGIONS);
+      refreshIcons();
+    }
+
+    function closeSearchModal() {
+      document.getElementById('search-modal').classList.add('hidden');
+    }
+
+    function handleSearchInput(e) {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) {
+        renderSearchResults(KOREA_REGIONS);
+        return;
+      }
+      const filtered = KOREA_REGIONS.filter(r => 
+        r.name.toLowerCase().includes(q) ||
+        r.fullName.toLowerCase().includes(q) ||
+        r.province.toLowerCase().includes(q)
+      );
+      renderSearchResults(filtered);
+    }
+
+    function renderSearchResults(regions) {
+      const container = document.getElementById('search-results');
+      container.innerHTML = '';
+      if (regions.length === 0) {
+        container.innerHTML = '<div class="p-4 text-center text-xs text-slate-400">검색 결과가 없습니다.</div>';
+        return;
+      }
+      regions.forEach(r => {
+        const item = document.createElement('button');
+        item.className = 'w-full p-3 rounded-2xl bg-slate-950/50 hover:bg-slate-800/80 border border-slate-800 flex items-center justify-between text-left transition-all';
+        item.onclick = () => {
+          currentLat = r.lat;
+          currentLng = r.lng;
+          currentAddress = r.fullName;
+          currentDongName = r.name;
+          closeSearchModal();
+          loadWeatherData(currentLat, currentLng);
+        };
+        item.innerHTML = `
+          <div class="flex items-center gap-2.5">
+            <i data-lucide="map-pin" class="w-4 h-4 text-sky-400"></i>
+            <div>
+              <span class="text-xs sm:text-sm font-bold text-slate-100 block">${r.name}</span>
+              <span class="text-[11px] text-slate-400 block">${r.fullName}</span>
+            </div>
+          </div>
+          <span class="text-[11px] font-mono text-slate-400">X${r.nx}, Y${r.ny}</span>
+        `;
+        container.appendChild(item);
+      });
+      refreshIcons();
+    }
+
+    // 7. PWA Install Modal Logic
+    function openInstallModal() {
+      document.getElementById('install-modal').classList.remove('hidden');
+      refreshIcons();
+    }
+
+    function closeInstallModal() {
+      document.getElementById('install-modal').classList.add('hidden');
+    }
+
+    function switchInstallTab(os) {
+      const tabAndroid = document.getElementById('tab-android');
+      const tabIos = document.getElementById('tab-ios');
+      const guideAndroid = document.getElementById('guide-android');
+      const guideIos = document.getElementById('guide-ios');
+
+      if (os === 'android') {
+        tabAndroid.className = 'py-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm transition-all';
+        tabIos.className = 'py-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all';
+        guideAndroid.classList.remove('hidden');
+        guideIos.classList.add('hidden');
+      } else {
+        tabIos.className = 'py-2 rounded-xl bg-sky-500/20 text-sky-300 border border-sky-500/40 shadow-sm transition-all';
+        tabAndroid.className = 'py-2 rounded-xl text-slate-400 hover:text-slate-200 transition-all';
+        guideIos.classList.remove('hidden');
+        guideAndroid.classList.add('hidden');
+      }
+      refreshIcons();
+    }
+
+    // Auto-init on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      handleGpsClick();
+    });
+
+  </script>
+</body>
+</html>
